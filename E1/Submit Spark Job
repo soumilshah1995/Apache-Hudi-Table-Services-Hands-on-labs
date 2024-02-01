@@ -1,0 +1,49 @@
+
+# ====================================================================
+# INGEST DATA
+# ====================================================================
+
+spark-submit \
+    --class org.apache.hudi.utilities.streamer.HoodieStreamer \
+    --packages 'org.apache.hudi:hudi-spark3.4-bundle_2.12:0.14.0'\
+    --properties-file spark-config.properties \
+    --master 'local[*]' \
+    --executor-memory 1g \
+    /Users/soumilshah/IdeaProjects/SparkProject/DeltaStreamer/jar/hudi-utilities-slim-bundle_2.12-0.14.0.jar \
+    --table-type COPY_ON_WRITE \
+    --op UPSERT \
+    --source-limit 4000000 \
+    --source-ordering-field ts \
+    --source-class org.apache.hudi.utilities.sources.CsvDFSSource \
+    --target-base-path 'file:///Users/soumilshah/IdeaProjects/SparkProject/DeltaStreamer/hudi/bronze_orders'  \
+    --target-table bronze_orders \
+    --props hudi_tbl.props
+
+
+------------------
+AYSNC Services
+------------------------
+MODE execute | schedule  | scheduleAndExecute
+
+spark-submit \
+    --class org.apache.hudi.utilities.HoodieIndexer \
+    --packages 'org.apache.hudi:hudi-spark3.4-bundle_2.12:0.14.0' \
+    --master 'local[*]' \
+    --executor-memory 1g \
+    /Users/soumilshah/IdeaProjects/SparkProject/DeltaStreamer/jar/hudi-utilities-slim-bundle_2.12-0.14.0.jar \
+     --mode scheduleAndExecute \
+    --base-path file:///Users/soumilshah/IdeaProjects/SparkProject/DeltaStreamer/hudi/bronze_orders \
+    --table-name bronze_orders \
+    --index-types COLUMN_STATS \
+    --hoodie-conf "hoodie.metadata.enable=true" \
+    --hoodie-conf "hoodie.metadata.index.async=true" \
+    --hoodie-conf "hoodie.metadata.index.column.stats.enable=true" \
+    --hoodie-conf "hoodie.write.concurrency.mode=optimistic_concurrency_control" \
+    --hoodie-conf "hoodie.write.lock.provider=org.apache.hudi.client.transaction.lock.InProcessLockProvider" \
+    --parallelism 2 \
+    --spark-memory 2g
+
+
+
+
+
